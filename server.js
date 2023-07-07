@@ -2,6 +2,7 @@
 const express        =  require("express");
 const path           =  require("path");
 const fs             =  require("fs");
+const uuid           =  require('./helpers/uuid.js');
 const recordedNotes  =  require("./db/db.json");
 
 
@@ -20,7 +21,6 @@ app.use(express.static("public"));
                                                                 /* ---------------------- ROUTES ---------------------- */
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get("/notes", (req, res) => res.sendFile(path.join(__dirname, 'public/notes.html')));
-
 app.get("/api/notes", (req, res) => res.json(recordedNotes));
 
 app.post("/api/notes", (req, res) => {
@@ -29,7 +29,7 @@ app.post("/api/notes", (req, res) => {
                                                                 /* Make sure that all fields of body are present        */
     if (title && text)
     {
-        const newNote = { title, text };                        /* Recreate new note object                             */
+        const newNote = { title, text, noteId: uuid() };        /* Recreate new note object                             */
         
                                                                 /* Read existing notes                                  */
         fs.readFile('./db/db.json', 'utf8', (err, data) => {
@@ -53,11 +53,29 @@ app.post("/api/notes", (req, res) => {
         });
 
         const response = { status: "success", body: newNote };  /* Create "success" response                            */
+        console.log(response);                                  /* Log response                                         */
         res.status(201).json(response);                         /* Send "success" response                              */
     }
     else {
         res.status(500).json("Error in posting note");          /* Send "error" response                                */
     }
+});
+
+app.delete("/api/notes/:id", (req, res) => {
+    const id = req.params.id;
+
+    for (let i = 0; i < recordedNotes.length; i++) 
+    {
+        const currentNote = recordedNotes[i];
+        if (currentNote.noteId === req.params.noteId) 
+        {
+            recordedNotes.splice(i, 1);
+            res.json("Note has been deleted");
+            return;
+        }
+    }
+
+    res.json("Note ID not found");
 });
 
                                                                 /* Set Express to listen to port                        */
