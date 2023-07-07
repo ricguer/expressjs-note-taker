@@ -1,6 +1,7 @@
                                                                 /* ===================== IMPORTS ====================== */
 const express  =  require("express");
 const path     =  require("path");
+const fs       =  require("fs");
 
 
                                                                 /* ================= GLOBAL VARIABLES ================= */
@@ -22,29 +23,33 @@ app.get("/", (req, res) => {
 
 app.get("/notes", (req, res) => {
     res.sendFile(path.join(__dirname, 'public/notes.html'));
+
+    
+});
+
+app.get("/api/notes", (req, res) => {
+    console.log("Got Request"); // TODO: Render existing notes
 });
 
 app.post("/api/notes", (req, res) => {
-    console.info(`${req.method} request received to add a note`);
-    console.log(req.body);
+    const { title, text } = req.body;                           /* Deconstruct request body                             */
 
-    const { title, text } = req.body;
-
+                                                                /* Make sure that all fields of body are present        */
     if (title && text)
     {
-        const newNote = {
-            title,
-            text
-        };
+        const newNote = { title, text };                        /* Recreate new note object                             */
+        const newNoteString = JSON.stringify(newNote);          /* Stringify JSON object                                */
 
-        const response = {
-            status: "success",
-            body: newNote
-        };
-        res.status(201).json(response);
+                                                                /* Write new note string to file                        */
+        fs.appendFileSync(`./db/db.json`, newNoteString, (err) => {
+            err ? console.error(err) : console.log(`Note "${newNote.title}" has been written to JSON file`);
+        });
+
+        const response = { status: "success", body: newNote };  /* Create "success" response                            */
+        res.status(201).json(response);                         /* Send "success" response                              */
     }
     else {
-        res.status(500).json("Error in posting note");
+        res.status(500).json("Error in posting note");          /* Send "error" response                                */
     }
 });
 
